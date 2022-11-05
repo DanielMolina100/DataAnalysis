@@ -6,15 +6,15 @@ install.packages("readr")
 library(readr)
 file.choose()
 
-segmentacion1<-"C:\\Users\\josda\\OneDrive\\Escritorio\\6to. Semestre\\Analisis de datos\\segmentation_data.csv"
+segmentacion2<-"C:\\Users\\josda\\OneDrive\\Escritorio\\6to. Semestre\\Analisis de datos\\segmentation_data.csv"
 
-data1<- read.csv(segmentacion1)
+data2<- read.csv(segmentacion2)
 
-head(data1)
+head(data2)
 
 ##Eliminando los datos nulos de la BD que no son utilizados en el programa
 
-nulos<-na.omit(data1)
+nulos<-na.omit(data2)
 head(nulos, n=10)
 
 ##Determinar el numero ideal de clusters, de acuerdo a la ley codo, justificando de 
@@ -32,8 +32,8 @@ for(i in 1:20){
 }
 
 library(ggplot2)
-ggplot() + geom_point(aes(x = 1:20, y = wcss), color = 'red') + 
-  geom_line(aes(x = 1:20, y = wcss), color = 'skyblue') + 
+ggplot() + geom_point(aes(x = 1:20, y = wcss), color = 'blue') + 
+  geom_line(aes(x = 1:20, y = wcss), color = 'black') + 
   ggtitle("Método del Codo") + 
   xlab('Cantidad de Centroides k') + 
   ylab('WCSS')
@@ -75,7 +75,7 @@ file.choose()
 
 
 segmentacion2<-"C:\\Users\\josda\\OneDrive\\Escritorio\\6to. Semestre\\Analisis de datos\\marketing_campaign.csv"
-data2<- read.csv(segmentacion2)
+datosP2<- read.csv(segmentacion2)
 
 head(data2)
 
@@ -154,3 +154,79 @@ ggplot() + geom_point(aes(x = 1:20, y = wcss), color = 'red') +
 
 
 ##OTRA FORMA PARA SABER EL NÚMERO DE CLUSTERS
+install.packages("factoextra")
+library(factoextra)
+library(NbClust)
+install.packages("useful")
+library(useful)
+install.packages("dplyr")
+library(dplyr)
+datos_limpiezaP2 <- datosP2
+datos_limpiezaP2 <- Filter(function(x)!all(is.na(x)), datos_limpiezaP2)
+datos_limpiezaP2<- datos_limpiezaP2[complete.cases(datos_limpiezaP2), ]
+datos_limpiezaP2
+datos_limpiezaP2 <- datos_limpiezaP2[,-c(1,16,17)]
+
+
+
+
+datos_limpiezaProducts <- datos_limpiezaP2[,-c(1:8)]
+datos_limpiezaProducts
+
+
+
+datos_limpiezaPeople <- datos_limpiezaP2[,-c(2,7,9:14)]
+datos_limpiezaPeople
+
+colnames(datos_limpiezaPeople)[1] = "Age"
+
+datos_limpiezaPeople$Age <- with(datos_limpiezaPeople,  2022 - Age)
+
+
+
+
+#Se cambio el tipo de variable para people
+datos_limpiezaPeople <- datos_limpiezaPeople %>%
+  mutate(Marital_Status = case_when(
+    Marital_Status == "Single"  ~ "1",
+    Marital_Status == "Together" ~ "2",
+    Marital_Status == "Married" ~ "3",
+    Marital_Status == "Divorced" ~ "4",
+    Marital_Status == "Widow" ~ "5",
+    Marital_Status == "Alone" ~ "6"))
+
+datos_limpiezaPeople<-  datos_limpiezaPeople %>%
+  mutate_if(is.character, as.integer)
+#eliminar nulos
+datos_limpiezaProducts<- datos_limpiezaProducts[complete.cases(datos_limpiezaProducts), ]
+datos_limpiezaPeople<- datos_limpiezaPeople[complete.cases(datos_limpiezaPeople), ]
+#Saber la cantidad de clusters ideales para people
+
+fviz_nbclust(datos_limpiezaPeople, kmeans, method = "wss") +
+  geom_vline(xintercept = 5, linetype = 2)+
+  labs(subtitle = "Elbow method")
+
+
+#Saber la cantidad de clusters ideales para products
+
+fviz_nbclust(datos_limpiezaProducts, kmeans, method = "wss") +
+  geom_vline(xintercept = 6, linetype = 2)+
+  labs(subtitle = "Elbow method")
+
+
+
+
+#Preparar para graficar sabiendo que 6 clusters seria lo ideal para products
+
+datos_graficaProducts <- kmeans(x=datos_limpiezaProducts,center=6) 
+
+plot(datos_graficaProducts, data = datos_limpiezaP2)
+
+
+#Preparar para graficar sabiendo que 5 clusters seria lo ideal para people
+
+datos_graficaPeople <- kmeans(x=datos_limpiezaPeople,center=5) 
+
+
+plot(datos_graficaPeople, data = datos_limpiezaPeople)
+
